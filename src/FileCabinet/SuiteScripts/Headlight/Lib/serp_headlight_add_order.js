@@ -112,17 +112,34 @@ define(["N/record", "N/runtime", "N/search", "N/format", "./serp_headlight_api_s
 
             salesorderSearchObj.run().each(function (result) {
                 let trandate = result.getValue("trandate")
+                let state = result.getValue({
+                    name: "state", join: "shippingAddress",
+                })
+                let zip = result.getValue({
+                    name: "zip", join: "shippingAddress",
+                })
+                let city = result.getValue({
+                    name: "city", join: "shippingAddress",
+                })
+                let street1 = result.getValue({
+                    name: "address1", join: "shippingAddress",
+                })
+                let street2 = result.getValue({
+                    name: "address2", join: "shippingAddress",
+                })
+                let street = street1 ? street1 : street2
+                let shippingAdrees = `${street} , ${city}, ${state}, ${zip}`
                 orderInfo.orders.push({
                     "remote_order_header_id": result.getValue("internalid"),
                     "order_number": result.getValue("tranid"),
                     "order_type": "sale",
-                    "ship_date": result.getValue("shipdate") ||trandate ,
+                    "ship_date": result.getValue("shipdate") || trandate,
                     "earliest_ship_date": null,
                     "customer": result.getText("entity") || null,
                     "vendor": null,
-                    "dropoff_address": result.getValue("shipaddress").replaceAll("\n", ", "),
+                    "dropoff_address": shippingAdrees,
                     "pickup_address": null,
-                    "delivery_window_start": result.getValue("shipdate") ||trandate ,
+                    "delivery_window_start": result.getValue("shipdate") || trandate,
                     "delivery_window_end": null,
                     "appointment_time": null,
                     "stop_time": null,
@@ -215,47 +232,33 @@ define(["N/record", "N/runtime", "N/search", "N/format", "./serp_headlight_api_s
             log.debug("updateSuccessfulOrder orderobj", orderObj)
             let orderId = null
             let soRec = record.load({
-                type: record.Type.SALES_ORDER,
-                id: orderObj.order_number
+                type: record.Type.SALES_ORDER, id: orderObj.order_number
             })
 
 
             let successfullyItemList = orderObj.order_items
             successfullyItemList.forEach(item => {
                 let lineIndex = soRec.findSublistLineWithValue({
-                    sublistId: "item",
-                    fieldId: "lineuniquekey",
-                    value: item.remote_primary_key
+                    sublistId: "item", fieldId: "lineuniquekey", value: item.remote_primary_key
                 })
                 soRec.setSublistValue({
-                    sublistId: "item",
-                    fieldId: "custcol_serp_headlight_item_id",
-                    line: lineIndex,
-                    value: item.id
+                    sublistId: "item", fieldId: "custcol_serp_headlight_item_id", line: lineIndex, value: item.id
                 })
                 soRec.setSublistValue({
-                    sublistId: "item",
-                    fieldId: "custcol_serp_headlight_failed_reason",
-                    line: lineIndex,
-                    value: ""
+                    sublistId: "item", fieldId: "custcol_serp_headlight_failed_reason", line: lineIndex, value: ""
                 })
 
                 soRec.setSublistValue({
-                    sublistId: "item",
-                    fieldId: "custcol_serp_headlight_res_status",
-                    line: lineIndex,
-                    value: "SUCCESS"
+                    sublistId: "item", fieldId: "custcol_serp_headlight_res_status", line: lineIndex, value: "SUCCESS"
                 })
                 if (orderId == null) orderId = item.order_id
 
             })
             soRec.setValue({
-                fieldId: "custbody_serp_headlight_deleted_order",
-                value: ""
+                fieldId: "custbody_serp_headlight_deleted_order", value: ""
             })
             soRec.setValue({
-                fieldId: "custbody_serp_headlight_order_id",
-                value: orderObj.id
+                fieldId: "custbody_serp_headlight_order_id", value: orderObj.id
             })
             return soRec.save({
                 ignoreMandatoryFields: true
@@ -274,32 +277,23 @@ define(["N/record", "N/runtime", "N/search", "N/format", "./serp_headlight_api_s
         try {
             log.debug("failed", orderObj)
             let soRec = record.load({
-                type: record.Type.SALES_ORDER,
-                id: orderObj.data.order_number
+                type: record.Type.SALES_ORDER, id: orderObj.data.order_number
             })
             let lineIndex = soRec.findSublistLineWithValue({
-                sublistId: "item",
-                fieldId: "lineuniquekey",
-                value: orderObj.data.remote_primary_key
+                sublistId: "item", fieldId: "lineuniquekey", value: orderObj.data.remote_primary_key
             })
-                soRec.setSublistValue({
-                    sublistId: "item",
-                    fieldId: "custcol_serp_headlight_item_id",
-                    line: lineIndex,
-                    value: ""
-                })
-                soRec.setSublistValue({
-                    sublistId: "item",
-                    fieldId: "custcol_serp_headlight_res_status",
-                    line: lineIndex,
-                    value: "FAILED"
-                })
-                soRec.setSublistValue({
-                    sublistId: "item",
-                    fieldId: "custcol_serp_headlight_failed_reason",
-                    line: lineIndex,
-                    value: orderObj.errors
-                })
+            soRec.setSublistValue({
+                sublistId: "item", fieldId: "custcol_serp_headlight_item_id", line: lineIndex, value: ""
+            })
+            soRec.setSublistValue({
+                sublistId: "item", fieldId: "custcol_serp_headlight_res_status", line: lineIndex, value: "FAILED"
+            })
+            soRec.setSublistValue({
+                sublistId: "item",
+                fieldId: "custcol_serp_headlight_failed_reason",
+                line: lineIndex,
+                value: orderObj.errors
+            })
 
             return soRec.save({
                 ignoreMandatoryFields: true
@@ -319,12 +313,10 @@ define(["N/record", "N/runtime", "N/search", "N/format", "./serp_headlight_api_s
         try {
             let res = options.resBody
             let soRec = record.load({
-                type: record.Type.SALES_ORDER,
-                id: options.recId
+                type: record.Type.SALES_ORDER, id: options.recId
             })
             soRec.setValue({
-                fieldId: "custbody_serp_headlight_deleted_order",
-                value: res.deleted_orders[0].order_number
+                fieldId: "custbody_serp_headlight_deleted_order", value: res.deleted_orders[0].order_number
             })
             // soRec.setValue({
             //     fieldId: "custbody_serp_headlight_order_id",
@@ -375,13 +367,11 @@ define(["N/record", "N/runtime", "N/search", "N/format", "./serp_headlight_api_s
      */
     function groupByOrderNumber(array) {
         try {
-            return Object.values(
-                array.reduce((acc, current) => {
-                    acc[current.order_number] = acc[current.order_number] ?? [];
-                    acc[current.order_number].push(current);
-                    return acc;
-                }, {})
-            );
+            return Object.values(array.reduce((acc, current) => {
+                acc[current.order_number] = acc[current.order_number] ?? [];
+                acc[current.order_number].push(current);
+                return acc;
+            }, {}));
         } catch (e) {
             log.error("groupByOrderNumber", e.message)
         }
@@ -398,7 +388,6 @@ define(["N/record", "N/runtime", "N/search", "N/format", "./serp_headlight_api_s
         updateDeletedOrder: updateDeletedOrder,
         getPendingFulfillmentItem: getPendingFulfillmentItem,
         groupByOrderNumber: groupByOrderNumber,
-
 
 
     };

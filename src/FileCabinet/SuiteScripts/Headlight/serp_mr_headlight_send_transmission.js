@@ -2,11 +2,12 @@
  * @NApiVersion 2.1
  * @NScriptType MapReduceScript
  */
-define(['N/runtime', 'N/search', "./Lib/serp_headlight_add_order.js", "./Lib/serp_headlight_api_service.js",],
+define(['N/runtime', 'N/search',"./Lib/serp_headlight_send_orders.js", "./Lib/serp_headlight_api_service.js", ],
     /**
      * @param{runtime} runtime
      * @param{search} search
      * @param add_order_util
+     * @param APIService
      */
     (runtime, search, add_order_util, APIService) => {
         /**

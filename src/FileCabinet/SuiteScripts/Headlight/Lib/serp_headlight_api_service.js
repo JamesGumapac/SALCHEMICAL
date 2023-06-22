@@ -3,9 +3,9 @@
  * @NModuleScope Public
  *
  */
-define(["N/https", "./serp_headlight_create_service_logs", "./serp_headlight_add_order"], /**
+define(["N/https", "./serp_headlight_create_service_logs"], /**
  *
- */ function (https, SERP_Headlight_ServiceLogs, SERP_Headlight_Add_Order) {
+ */ function (https, SERP_Headlight_ServiceLogs,) {
     /**
      * @param {int} options.recId Sales order Internal Id
      * @param {string} options.orderObj Created JSON Body string to send to Headlight
