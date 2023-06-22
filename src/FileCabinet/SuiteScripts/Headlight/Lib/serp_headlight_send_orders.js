@@ -20,110 +20,110 @@ define([
    * @returns {object} return record object information
    */
 
-  function getOrderDetails(options) {
-    try {
-      const soRec = record.load({
-        type: record.Type.SALES_ORDER,
-        id: options.recId,
-        isDynamic: true,
-      });
-
-      const shipSubRecord = soRec.getSubrecord({
-        fieldId: "shippingaddress",
-      });
-
-      let dropOffAddress = `${shipSubRecord.getValue(
-        "addr1"
-      )},  ${shipSubRecord.getValue("city")}, ${shipSubRecord.getValue(
-        "state"
-      )}    ${shipSubRecord.getValue("zip")} `;
-      let orderInfo = {};
-      orderInfo.orders = [];
-      for (let i = 0; i < soRec.getLineCount("item"); i++) {
-        const lineUniqueKey = soRec.getSublistValue({
-          sublistId: "item",
-          fieldId: "lineuniquekey",
-          line: i,
-        });
-        const itemId = soRec.getSublistValue({
-          sublistId: "item",
-          fieldId: "item",
-          line: i,
-        });
-        const itemName = soRec.getSublistText({
-          sublistId: "item",
-          fieldId: "item",
-          line: i,
-        });
-        const expectedShipDate = soRec.getSublistText({
-          sublistId: "item",
-          fieldId: "expectedshipdate",
-          line: i,
-        });
-
-        const quantity = soRec.getSublistValue({
-          sublistId: "item",
-          fieldId: "quantity",
-          line: i,
-        });
-        let quantityfulfilled = 0;
-        quantityfulfilled = soRec.getSublistValue({
-          sublistId: "item",
-          fieldId: "quantityfulfilled",
-          line: i,
-        });
-        const description = soRec.getSublistValue({
-          sublistId: "item",
-          fieldId: "description",
-          line: i,
-        });
-        orderInfo.orders.push({
-          remote_order_header_id: options.recId,
-          order_number: soRec.getValue("tranid"),
-          order_type: "sale",
-          ship_date: expectedShipDate || null,
-          earliest_ship_date: null,
-          customer: soRec.getText("entity") || null,
-          vendor: null,
-          dropoff_address: dropOffAddress,
-          pickup_address: null,
-          delivery_window_start: null,
-          delivery_window_end: null,
-          appointment_time: null,
-          stop_time: null,
-          order_comments: soRec.getValue("memo") || null,
-          ship_rules: null,
-          bin_ship_rules: "",
-          shipping_constraints: null,
-          hold_code: null,
-          bol_number: null,
-          bol_stop_number: null,
-          selected: null,
-          remote_order_item_id: lineUniqueKey,
-          line_number: i + 1,
-          description: description || null,
-          part_name: itemName || null,
-          part_number: null,
-          unique_bin_part_number: null,
-          inventory_status: null,
-          quantity: quantity - quantityfulfilled || null,
-          weight: null,
-          width: null,
-          length: null,
-        });
-      }
-      orderInfo.delete_orders = true;
-      log.debug("order obj", orderInfo);
-      return orderInfo;
-    } catch (e) {
-      log.error("getOrderDetails", e.message);
-    }
-  }
+  // function getOrderDetails(options) {
+  //   try {
+  //     const soRec = record.load({
+  //       type: record.Type.SALES_ORDER,
+  //       id: options.recId,
+  //       isDynamic: true,
+  //     });
+  //
+  //     const shipSubRecord = soRec.getSubrecord({
+  //       fieldId: "shippingaddress",
+  //     });
+  //
+  //     let dropOffAddress = `${shipSubRecord.getValue(
+  //       "addr1"
+  //     )},  ${shipSubRecord.getValue("city")}, ${shipSubRecord.getValue(
+  //       "state"
+  //     )}    ${shipSubRecord.getValue("zip")} `;
+  //     let orderInfo = {};
+  //     orderInfo.orders = [];
+  //     for (let i = 0; i < soRec.getLineCount("item"); i++) {
+  //       const lineUniqueKey = soRec.getSublistValue({
+  //         sublistId: "item",
+  //         fieldId: "lineuniquekey",
+  //         line: i,
+  //       });
+  //       const itemId = soRec.getSublistValue({
+  //         sublistId: "item",
+  //         fieldId: "item",
+  //         line: i,
+  //       });
+  //       const itemName = soRec.getSublistText({
+  //         sublistId: "item",
+  //         fieldId: "item",
+  //         line: i,
+  //       });
+  //       const expectedShipDate = soRec.getSublistText({
+  //         sublistId: "item",
+  //         fieldId: "expectedshipdate",
+  //         line: i,
+  //       });
+  //
+  //       const quantity = soRec.getSublistValue({
+  //         sublistId: "item",
+  //         fieldId: "quantity",
+  //         line: i,
+  //       });
+  //       let quantityfulfilled = 0;
+  //       quantityfulfilled = soRec.getSublistValue({
+  //         sublistId: "item",
+  //         fieldId: "quantityfulfilled",
+  //         line: i,
+  //       });
+  //       const description = soRec.getSublistValue({
+  //         sublistId: "item",
+  //         fieldId: "description",
+  //         line: i,
+  //       });
+  //       orderInfo.orders.push({
+  //         remote_order_header_id: options.recId,
+  //         order_number: soRec.getValue("tranid"),
+  //         order_type: "sale",
+  //         ship_date: expectedShipDate || null,
+  //         earliest_ship_date: null,
+  //         customer: soRec.getText("entity") || null,
+  //         vendor: null,
+  //         dropoff_address: dropOffAddress,
+  //         pickup_address: null,
+  //         delivery_window_start: null,
+  //         delivery_window_end: null,
+  //         appointment_time: null,
+  //         stop_time: null,
+  //         order_comments: soRec.getValue("memo") || null,
+  //         ship_rules: null,
+  //         bin_ship_rules: "",
+  //         shipping_constraints: null,
+  //         hold_code: null,
+  //         bol_number: null,
+  //         bol_stop_number: null,
+  //         selected: null,
+  //         remote_order_item_id: lineUniqueKey,
+  //         line_number: i + 1,
+  //         description: description || null,
+  //         part_name: itemName || null,
+  //         part_number: null,
+  //         unique_bin_part_number: null,
+  //         inventory_status: null,
+  //         quantity: quantity - quantityfulfilled || null,
+  //         weight: null,
+  //         width: null,
+  //         length: null,
+  //       });
+  //     }
+  //     orderInfo.delete_orders = true;
+  //     log.debug("order obj", orderInfo);
+  //     return orderInfo;
+  //   } catch (e) {
+  //     log.error("getOrderDetails", e.message);
+  //   }
+  // }
 
   /**
    * Return SalesOrder that is Pending Fulfillment/Partially Fulfilled
-   * @param {string} searchId Search for Pending fulfillment
-   * @return {array} return SO internal Ids
+   * @param {string} searchId Saved Search Id for Pending fulfillment
+   * @return {object} return all of the line combined in one object that will be use to send to headlight
    */
   function getPendingFulfillmentItem(searchId) {
     try {
@@ -173,7 +173,7 @@ define([
           delivery_window_end: addWeekToDate(new Date(shipDate)) || addWeekToDate(new Date(trandate)),
           appointment_time: null,
           stop_time: null,
-          order_comments: result.getValue("custbody_sal_prod_ship_ins") || null,
+          order_comments: result.getValue("custbody_sal_prod_ship_ins").replace(/(\r\n|\n|\r)/gm, "") || null,
           ship_rules: null,
           bin_ship_rules: "",
           shipping_constraints: null,
@@ -349,9 +349,9 @@ define([
   }
 
   /**
-   * Update SO failed line item
-   *@param {object}orderObj Failed Order Payload From Headlight
-   *@return return internal So Id of
+   *Update SO failed line item
+   *@param {object} orderObj Failed Order Payload From Headlight
+   *@return {number} SoId return internal So Id of
    */
   function updateSoFailedItem(orderObj) {
     try {
@@ -396,7 +396,7 @@ define([
    * Update whole SO line item
    *@param {string} options.recId  Sales Order Id
    *@param {object} options.resBody Response from Headlight API
-   *@param {string} soId return SO Id
+   *@return {number} soId return SO Id
    */
   function updateDeletedOrder(options) {
     try {
@@ -451,7 +451,7 @@ define([
       (stValue.constructor === Array && stValue.length === 0) ||
       (stValue.constructor === Object &&
         (function (v) {
-          for (var k in v) return false;
+          for (let k in v) return false;
           return true;
         })(stValue))
     );
@@ -477,7 +477,6 @@ define([
   }
 
   return {
-    isEmpty: isEmpty,
     sendOrderDetails: sendOrderDetails,
     getHeadlightIntegSettings: getHeadlightIntegSettings,
     updateSuccessfulOrder: updateSuccessfulOrder,
