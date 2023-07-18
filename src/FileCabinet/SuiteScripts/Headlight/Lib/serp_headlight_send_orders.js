@@ -158,7 +158,8 @@ define([
         });
         let street = street1 ? street1 : street2;
         let shippingAdrees = `${street}, ${city}, ${state}, ${zip}`;
-
+        let customAddressField =  result.getValue("custbody_customaddress_body_field").replace(/(\r\n|\n|\r)/gm, "")
+        let prodShip = result.getValue("custbody_sal_prod_ship_ins").replace(/(\r\n|\n|\r)/gm, "")
         orderInfo.orders.push({
           remote_order_header_id: result.getValue("tranid"),
           order_number: result.getValue("internalid"),
@@ -173,7 +174,7 @@ define([
           delivery_window_end: addWeekToDate(new Date(shipDate)) || addWeekToDate(new Date(trandate)),
           appointment_time: null,
           stop_time: null,
-          order_comments: result.getValue("custbody_sal_prod_ship_ins").replace(/(\r\n|\n|\r)/gm, "") || null,
+          order_comments:  `${customAddressField} - ${prodShip}`|| null,
           ship_rules: null,
           bin_ship_rules: "",
           shipping_constraints: null,
