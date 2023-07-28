@@ -156,13 +156,18 @@ define([
           name: "address2",
           join: "shippingAddress",
         });
+        let length = 0
+        let width = 0
+        let numOfPallet = result.getValue("custcol_no_of_pallets") || 0
+        length = numOfPallet * 48
+        width = numOfPallet * 40
         let street = street1 ? street1 : street2;
         let shippingAdrees = `${street}, ${city}, ${state}, ${zip}`;
         let customAddressField =  result.getValue("custbody_customaddress_body_field").replace(/(\r\n|\n|\r)/gm, "")
         let prodShip = result.getValue("custbody_sal_prod_ship_ins").replace(/(\r\n|\n|\r)/gm, "")
         orderInfo.orders.push({
-          remote_order_header_id: result.getValue("tranid"),
-          order_number: result.getValue("internalid"),
+          remote_order_header_id: `${result.getValue("internalid")}-${result.getValue("lineuniquekey")}`,
+          order_number:  result.getValue("tranid"),
           order_type: "sale",
           ship_date: shipDate || trandate,
           earliest_ship_date: null,
@@ -182,7 +187,7 @@ define([
           bol_number: null,
           bol_stop_number: null,
           selected: null,
-          remote_order_item_id: result.getValue("lineuniquekey"),
+          remote_order_item_id: result.getValue("lineuniquekey")+"-"+result.getValue("linesequencenumber"),
           line_number: result.getValue("linesequencenumber"),
           description: result.getValue("memo") || null,
           part_name: result.getText("item") || null,
@@ -196,8 +201,8 @@ define([
               label: "Remaining QTY to be fulfilled",
             }) || null,
           weight: result.getValue("custcol_sal_total_net_weight"),
-          width: null,
-          length: null,
+          width: width || null,
+          length: length || null,
         });
         return true;
       });
@@ -299,18 +304,21 @@ define([
   function updateSuccessfulOrder(orderObj) {
     try {
       log.debug("updateSuccessfulOrder orderobj", orderObj);
+      let id = orderObj.remote_primary_key.split("-")
+
       let orderId = null;
       let soRec = record.load({
         type: record.Type.SALES_ORDER,
-        id: orderObj.order_number,
+        id: id[0],
       });
 
       let successfullyItemList = orderObj.order_items;
       successfullyItemList.forEach((item) => {
+        let uniquekey = item.remote_primary_key.split("-")
         let lineIndex = soRec.findSublistLineWithValue({
           sublistId: "item",
           fieldId: "lineuniquekey",
-          value: item.remote_primary_key,
+          value:uniquekey[0],
         });
         soRec.setSublistValue({
           sublistId: "item",
@@ -345,7 +353,12 @@ define([
         ignoreMandatoryFields: true,
       });
     } catch (e) {
-      log.error("updateSuccessfulOrder", e.message);
+      if(e.message.includes("Record has been changed") == true){
+        updateSuccessfulOrder(orderObj)
+      }else{
+        log.error("updateSuccessfulOrder", e.message);
+      }
+
     }
   }
 
@@ -357,14 +370,18 @@ define([
   function updateSoFailedItem(orderObj) {
     try {
       log.debug("failed", orderObj);
+      let id = orderObj.data.remote_order_header_id
+      id = id.split("-")
+
       let soRec = record.load({
         type: record.Type.SALES_ORDER,
-        id: orderObj.data.order_number,
+        id: id[0],
       });
+      let uniquekey = orderObj.data.remote_order_item_id.split("-")
       let lineIndex = soRec.findSublistLineWithValue({
         sublistId: "item",
         fieldId: "lineuniquekey",
-        value: orderObj.data.remote_order_item_id,
+        value: uniquekey[0],
       });
       soRec.setSublistValue({
         sublistId: "item",
@@ -389,7 +406,12 @@ define([
         ignoreMandatoryFields: true,
       });
     } catch (e) {
-      log.error("updateSoFailedItem", e.message);
+      if(e.message.includes("Record has been changed") == true){
+        updateSoFailedItem(orderObj)
+      }else{
+        log.error("updateSoFailedItem", e.message);
+      }
+
     }
   }
 
