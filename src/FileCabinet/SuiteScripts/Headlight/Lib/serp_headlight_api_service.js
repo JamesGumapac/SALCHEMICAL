@@ -30,6 +30,7 @@ define(["N/https", "./serp_headlight_create_service_logs"], /**
                 body: JSON.stringify(options.orderObj),
                 headers: headers,
             });
+            log.audit("headlightResponse", headlightResponse)
             SERP_Headlight_ServiceLogs.headlightCreateServicelogs(
                 {
                     soId: recId,

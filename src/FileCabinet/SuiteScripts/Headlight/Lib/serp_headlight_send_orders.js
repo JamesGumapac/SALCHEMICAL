@@ -122,20 +122,22 @@ define([
 
   /**
    * Return SalesOrder that is Pending Fulfillment/Partially Fulfilled
-   * @param {string} searchId Saved Search Id for Pending fulfillment
+   * @param {string} options.searchId Saved Search Id for Pending fulfillment
+   * @param {boolean} options.deleteOrders Integration Settings to Delete Orders if new batch of orders will be send
    * @return {object} return all of the line combined in one object that will be use to send to headlight
    */
-  function getPendingFulfillmentItem(searchId) {
+  function getPendingFulfillmentItem(options) {
     try {
+      log.audit("getPendingFulfillmentItem", options);
       let orderInfo = {};
       orderInfo.orders = [];
       const salesorderSearchObj = search.load({
-        id: searchId,
+        id: options.searchId,
       });
-
+      let x = 0;
       salesorderSearchObj.run().each(function (result) {
         let trandate = result.getValue("trandate");
-        let shipDate = result.getValue("shipdate")
+        let shipDate = result.getValue("shipdate");
         let state = result.getValue({
           name: "state",
           join: "shippingAddress",
@@ -156,57 +158,71 @@ define([
           name: "address2",
           join: "shippingAddress",
         });
-        let length = 0
-        let width = 0
-        let numOfPallet = result.getValue("custcol_no_of_pallets") || 0
-        length = numOfPallet * 48
-        width = numOfPallet * 40
+        let length = 0;
+        let width = 0;
+        let numOfPallet = result.getValue("custcol_no_of_pallets") || 0;
+        length = numOfPallet * 48;
+        width = numOfPallet * 40;
         let street = street1 ? street1 : street2;
         let shippingAdrees = `${street}, ${city}, ${state}, ${zip}`;
-        let customAddressField =  result.getValue("custbody_customaddress_body_field").replace(/(\r\n|\n|\r)/gm, "")
-        let prodShip = result.getValue("custbody_sal_prod_ship_ins").replace(/(\r\n|\n|\r)/gm, "")
-        orderInfo.orders.push({
-          remote_order_header_id: `${result.getValue("internalid")}-${result.getValue("lineuniquekey")}`,
-          order_number:  result.getValue("tranid"),
-          order_type: "sale",
-          ship_date: shipDate || trandate,
-          earliest_ship_date: null,
-          customer: result.getText("entity") || null,
-          vendor: null,
-          dropoff_address: shippingAdrees,
-          pickup_address: null,
-          delivery_window_start: shipDate || trandate,
-          delivery_window_end: addWeekToDate(new Date(shipDate)) || addWeekToDate(new Date(trandate)),
-          appointment_time: null,
-          stop_time: null,
-          order_comments:  `${customAddressField} - ${prodShip}`|| null,
-          ship_rules: null,
-          bin_ship_rules: "",
-          shipping_constraints: null,
-          hold_code: null,
-          bol_number: null,
-          bol_stop_number: null,
-          selected: null,
-          remote_order_item_id: result.getValue("lineuniquekey")+"-"+result.getValue("linesequencenumber"),
-          line_number: result.getValue("linesequencenumber"),
-          description: result.getValue("memo") || null,
-          part_name: result.getText("item") || null,
-          part_number: null,
-          unique_bin_part_number: null,
-          inventory_status: null,
-          quantity:
-            result.getValue({
-              name: "formulanumeric",
-              formula: "{quantity} - {quantityshiprecv}",
-              label: "Remaining QTY to be fulfilled",
-            }) || null,
-          weight: result.getValue("custcol_sal_total_net_weight"),
-          width: width || null,
-          length: length || null,
-        });
+        let customAddressField = result
+          .getValue("custbody_customaddress_body_field")
+          .replace(/(\r\n|\n|\r)/gm, "");
+        let prodShip = result
+          .getValue("custbody_sal_prod_ship_ins")
+          .replace(/(\r\n|\n|\r)/gm, "");
+        x += 1;
+
+        if (x > 179)
+          orderInfo.orders.push({
+            remote_order_header_id: `${result.getValue(
+              "internalid"
+            )}-${result.getValue("lineuniquekey")}`,
+            order_number: result.getValue("tranid"),
+            order_type: "sale",
+            ship_date: shipDate || trandate,
+            earliest_ship_date: null,
+            customer: result.getText("entity") || null,
+            vendor: null,
+            dropoff_address: shippingAdrees,
+            pickup_address: null,
+            delivery_window_start: shipDate || trandate,
+            delivery_window_end:
+              addWeekToDate(new Date(shipDate)) ||
+              addWeekToDate(new Date(trandate)),
+            appointment_time: null,
+            stop_time: null,
+            order_comments: `${customAddressField} - ${prodShip}` || null,
+            ship_rules: null,
+            bin_ship_rules: "",
+            shipping_constraints: null,
+            hold_code: null,
+            bol_number: null,
+            bol_stop_number: null,
+            selected: null,
+            remote_order_item_id:
+              result.getValue("lineuniquekey") +
+              "-" +
+              result.getValue("linesequencenumber"),
+            line_number: result.getValue("linesequencenumber"),
+            description: result.getValue("memo") || null,
+            part_name: result.getText("item") || null,
+            part_number: null,
+            unique_bin_part_number: null,
+            inventory_status: null,
+            quantity:
+              result.getValue({
+                name: "formulanumeric",
+                formula: "{quantity} - {quantityshiprecv}",
+                label: "Remaining QTY to be fulfilled",
+              }) || null,
+            weight: result.getValue("custcol_sal_total_net_weight") ,
+            width: width || null,
+            length: length || null,
+          });
         return true;
       });
-      orderInfo.delete_orders = true;
+      orderInfo.delete_orders = options.deleteOrders;
       return orderInfo;
     } catch (e) {
       log.error("getPendingFulfillmentItem", e.message);
@@ -281,6 +297,7 @@ define([
           "custrecord_serp_headlight_ep_url",
           "custrecord_serp_headlight_comp_id",
           "custrecord_serp_headlight_authorization",
+          "custrecord_serp_headlight_delete_orders",
         ],
       });
       headLightSettingsResults["endpointURL"] =
@@ -289,6 +306,8 @@ define([
         headLightSettingsSearch["custrecord_serp_headlight_authorization"];
       headLightSettingsResults["companyId"] =
         headLightSettingsSearch["custrecord_serp_headlight_comp_id"];
+      headLightSettingsResults["deleteOrders"] =
+        headLightSettingsSearch["custrecord_serp_headlight_delete_orders"];
       log.debug("headLightSettingsResults", headLightSettingsResults);
       return headLightSettingsResults;
     } catch (e) {
@@ -304,7 +323,7 @@ define([
   function updateSuccessfulOrder(orderObj) {
     try {
       log.debug("updateSuccessfulOrder orderobj", orderObj);
-      let id = orderObj.remote_primary_key.split("-")
+      let id = orderObj.remote_primary_key.split("-");
 
       let orderId = null;
       let soRec = record.load({
@@ -314,11 +333,11 @@ define([
 
       let successfullyItemList = orderObj.order_items;
       successfullyItemList.forEach((item) => {
-        let uniquekey = item.remote_primary_key.split("-")
+        let uniquekey = item.remote_primary_key.split("-");
         let lineIndex = soRec.findSublistLineWithValue({
           sublistId: "item",
           fieldId: "lineuniquekey",
-          value:uniquekey[0],
+          value: uniquekey[0],
         });
         soRec.setSublistValue({
           sublistId: "item",
@@ -353,12 +372,11 @@ define([
         ignoreMandatoryFields: true,
       });
     } catch (e) {
-      if(e.message.includes("Record has been changed") == true){
-        updateSuccessfulOrder(orderObj)
-      }else{
+      if (e.message.includes("Record has been changed") == true) {
+        updateSuccessfulOrder(orderObj);
+      } else {
         log.error("updateSuccessfulOrder", e.message);
       }
-
     }
   }
 
@@ -370,14 +388,14 @@ define([
   function updateSoFailedItem(orderObj) {
     try {
       log.debug("failed", orderObj);
-      let id = orderObj.data.remote_order_header_id
-      id = id.split("-")
+      let id = orderObj.data.remote_order_header_id;
+      id = id.split("-");
 
       let soRec = record.load({
         type: record.Type.SALES_ORDER,
         id: id[0],
       });
-      let uniquekey = orderObj.data.remote_order_item_id.split("-")
+      let uniquekey = orderObj.data.remote_order_item_id.split("-");
       let lineIndex = soRec.findSublistLineWithValue({
         sublistId: "item",
         fieldId: "lineuniquekey",
@@ -406,12 +424,11 @@ define([
         ignoreMandatoryFields: true,
       });
     } catch (e) {
-      if(e.message.includes("Record has been changed") == true){
-        updateSoFailedItem(orderObj)
-      }else{
+      if (e.message.includes("Record has been changed") == true) {
+        updateSoFailedItem(orderObj);
+      } else {
         log.error("updateSoFailedItem", e.message);
       }
-
     }
   }
 
